@@ -1,8 +1,7 @@
 from flask import Flask, Response, render_template
-import cv2
 import pyaudio
 
-from video_stream.camera import Camera
+from camera import Camera
 
 app = Flask(__name__)
 
@@ -90,6 +89,7 @@ def audio():
            yield(data)
         stream.terminate()
     return Response(sound())
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', threaded=True)
