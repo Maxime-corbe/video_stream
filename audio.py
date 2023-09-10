@@ -99,7 +99,7 @@ class BaseAudio(object):
             # the last 10 seconds then stop the thread
             if time.time() - BaseAudio.last_access > 10:
                 frames_iterator.close()
-                print('Stopping camera thread due to inactivity.')
+                print('Stopping audio thread due to inactivity.')
                 break
         BaseAudio.thread = None
 
