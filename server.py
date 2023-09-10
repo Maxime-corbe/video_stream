@@ -26,6 +26,7 @@ def video_feed():
     return Response(generate_video(Camera()), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 
+
 def genHeader(sampleRate, bitsPerSample, channels):
     datasize = 2000*10**6
     o = bytes("RIFF",'ascii')                                               # (4byte) Marks file as RIFF
