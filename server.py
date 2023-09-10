@@ -1,24 +1,11 @@
 from flask import Flask, Response, render_template
-import pyaudio
+
 
 from camera import Camera
+from audio import RATE, CHANNELS, Audio
 
 app = Flask(__name__)
 
-
-# Video streaming function
-# def generate_video():
-#     # Open video source (you can change 0 to your webcam index)
-#     cap = cv2.VideoCapture(0)
-#
-#     while True:
-#         ret, frame = cap.read()
-#         if not ret:
-#             break
-#         ret, jpeg = cv2.imencode('.jpg', frame)
-#         frame_bytes = jpeg.tobytes()
-#         yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
-#     cap.releases()
 
 def generate_video(camera):
     """Video streaming generator function."""
@@ -39,16 +26,6 @@ def video_feed():
     return Response(generate_video(Camera()), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 
-FORMAT = pyaudio.paInt16
-CHANNELS = 1
-RATE = 48000
-CHUNK = 1024
-RECORD_SECONDS = 5
-
-
-audio1 = pyaudio.PyAudio()
-
-
 def genHeader(sampleRate, bitsPerSample, channels):
     datasize = 2000*10**6
     o = bytes("RIFF",'ascii')                                               # (4byte) Marks file as RIFF
@@ -66,29 +43,22 @@ def genHeader(sampleRate, bitsPerSample, channels):
     o += (datasize).to_bytes(4,'little')                                    # (4byte) Data size in bytes
     return o
 
+
+def generate_audio(audio):
+    bitsPerSample = 16
+    wav_header = genHeader(RATE, bitsPerSample, CHANNELS)
+    first_run = True
+    while True:
+        data = audio.get_frame()
+        if first_run:
+            data = wav_header + data
+            first_run = False
+        yield data
+
+
 @app.route('/audio')
 def audio():
-    # start Recording
-    def sound():
-        sampleRate = 44100
-        bitsPerSample = 16
-        wav_header = genHeader(RATE, bitsPerSample, CHANNELS)
-
-        stream = audio1.open(format=FORMAT, channels=CHANNELS,
-                        rate=RATE, input=True,input_device_index=1,
-                        frames_per_buffer=CHUNK)
-        print("recording...")
-        #frames = []
-        first_run = True
-        while True:
-           if first_run:
-               data = wav_header + stream.read(CHUNK, exception_on_overflow=False)
-               first_run = False
-           else:
-               data = stream.read(CHUNK, exception_on_overflow=False)
-           yield(data)
-        stream.terminate()
-    return Response(sound())
+    return Response(generate_audio(Audio()))
 
 
 if __name__ == '__main__':
