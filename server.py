@@ -2,22 +2,31 @@ from flask import Flask, Response, render_template
 import cv2
 import pyaudio
 
+from video_stream.camera import Camera
+
 app = Flask(__name__)
 
 
 # Video streaming function
-def generate_video():
-    # Open video source (you can change 0 to your webcam index)
-    cap = cv2.VideoCapture(0)
+# def generate_video():
+#     # Open video source (you can change 0 to your webcam index)
+#     cap = cv2.VideoCapture(0)
+#
+#     while True:
+#         ret, frame = cap.read()
+#         if not ret:
+#             break
+#         ret, jpeg = cv2.imencode('.jpg', frame)
+#         frame_bytes = jpeg.tobytes()
+#         yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+#     cap.releases()
 
+def generate_video(camera):
+    """Video streaming generator function."""
+    yield b'--frame\r\n'
     while True:
-        ret, frame = cap.read()
-        if not ret:
-            break
-        ret, jpeg = cv2.imencode('.jpg', frame)
-        frame_bytes = jpeg.tobytes()
-        yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
-    cap.releases()
+        frame = camera.get_frame()
+        yield b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n--frame\r\n'
 
 
 @app.route('/')
@@ -28,7 +37,7 @@ def index():
 @app.route('/video_feed')
 def video_feed():
     # Return the video and audio streaming response
-    return Response(generate_video(), mimetype='multipart/x-mixed-replace; boundary=frame')
+    return Response(generate_video(Camera()), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 
 FORMAT = pyaudio.paInt16
