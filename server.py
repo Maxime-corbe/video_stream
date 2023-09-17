@@ -9,10 +9,9 @@ app = Flask(__name__)
 
 def generate_video(camera):
     """Video streaming generator function."""
-    yield b'--frame\r\n'
     while True:
         frame = camera.get_frame()
-        yield b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n--frame\r\n'
+        yield b'\r\n--frame\r\nContent-Type: image/jpeg\r\n\r\n' + frame + b'--frame\r\n'
 
 
 @app.route('/')
