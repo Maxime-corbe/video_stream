@@ -6,8 +6,8 @@ import pyaudio
 
 FORMAT = pyaudio.paInt16
 CHANNELS = 1
-RATE = 44100
-CHUNK = 1024
+RATE = 48000
+CHUNK = 2048
 
 
 class AudioEvent(object):
