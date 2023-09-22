@@ -56,6 +56,8 @@ class BaseAudio(object):
     thread = None  # background thread that reads frames from camera
     frame = None  # current frame is stored here by background thread
     last_access = 0  # time of last client access to the camera
+    stream = None
+    audio = None
     event = AudioEvent()
 
     def __init__(self):
@@ -79,8 +81,9 @@ class BaseAudio(object):
         BaseAudio.event.clear()
 
         return BaseAudio.frame
-
-    def frames(self):
+        
+    @classmethod
+    def frames(cls):
         """"Generator that returns frames from the mic."""
         raise RuntimeError('Must be implemented by subclasses.')
 
@@ -106,11 +109,12 @@ class BaseAudio(object):
 
 
 class Audio(BaseAudio):
-    def frames(self):
-        self.audio = pyaudio.PyAudio()
+    @classmethod
+    def frames(cls):
+        cls.audio = pyaudio.PyAudio()
         while True:
             try:
-                self.stream = self.audio.open(format=FORMAT, channels=CHANNELS,
+                cls.stream = cls.audio.open(format=FORMAT, channels=CHANNELS,
                                               rate=RATE, input=True, input_device_index=1,
                                               frames_per_buffer=CHUNK)
             except OSError:
@@ -120,4 +124,4 @@ class Audio(BaseAudio):
         print("recording...")
         # frames = []
         while True:
-            yield self.stream.read(CHUNK, exception_on_overflow=False)
+            yield cls.stream.read(CHUNK, exception_on_overflow=False)
