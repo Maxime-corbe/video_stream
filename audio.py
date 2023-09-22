@@ -6,7 +6,7 @@ import pyaudio
 
 FORMAT = pyaudio.paInt16
 CHANNELS = 1
-RATE = 48000
+RATE = 44100
 CHUNK = 1024
 
 
@@ -80,15 +80,14 @@ class BaseAudio(object):
 
         return BaseAudio.frame
 
-    @staticmethod
-    def frames():
-        """"Generator that returns frames from the camera."""
+    def frames(self):
+        """"Generator that returns frames from the mic."""
         raise RuntimeError('Must be implemented by subclasses.')
 
     @classmethod
     def _thread(cls):
-        """Camera background thread."""
-        print('Starting camera thread.')
+        """audio background thread."""
+        print('Starting audio thread.')
         frames_iterator = cls.frames()
         for frame in frames_iterator:
             BaseAudio.frame = frame
@@ -98,6 +97,8 @@ class BaseAudio(object):
             # if there hasn't been any clients asking for frames in
             # the last 10 seconds then stop the thread
             if time.time() - BaseAudio.last_access > 10:
+                cls.stream.close()
+                cls.audio.terminate()
                 frames_iterator.close()
                 print('Stopping audio thread due to inactivity.')
                 break
@@ -105,13 +106,18 @@ class BaseAudio(object):
 
 
 class Audio(BaseAudio):
-    @staticmethod
-    def frames():
-        audio1 = pyaudio.PyAudio()
-        stream = audio1.open(format=FORMAT, channels=CHANNELS,
-                             rate=RATE, input=True, input_device_index=1,
-                             frames_per_buffer=CHUNK)
+    def frames(self):
+        self.audio = pyaudio.PyAudio()
+        while True:
+            try:
+                self.stream = self.audio.open(format=FORMAT, channels=CHANNELS,
+                                              rate=RATE, input=True, input_device_index=1,
+                                              frames_per_buffer=CHUNK)
+            except OSError:
+                time.sleep(2)
+            else:
+                break
         print("recording...")
         # frames = []
         while True:
-            yield stream.read(CHUNK, exception_on_overflow=False)
+            yield self.stream.read(CHUNK, exception_on_overflow=False)
